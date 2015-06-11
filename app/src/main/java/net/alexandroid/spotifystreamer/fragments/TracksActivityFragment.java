@@ -1,17 +1,17 @@
 package net.alexandroid.spotifystreamer.fragments;
 
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.activities.TracksActivity;
@@ -55,9 +55,7 @@ public class TracksActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_tracks, container, false);
         getArtistIdFromIntent();
-        ActionBar mActionBar = ((ActionBarActivity) getActivity()).getSupportActionBar();
-        if (mActionBar != null) mActionBar.setSubtitle(artistName);
-
+        setActionBarSubTitle();
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         setRecyclerView();
         getArtistTracks();
@@ -70,6 +68,12 @@ public class TracksActivityFragment extends Fragment {
             artistId = intent.getStringExtra(Intent.EXTRA_TEXT);
             artistName = intent.getStringExtra(Intent.EXTRA_REFERRER_NAME);
         }
+    }
+
+    private void setActionBarSubTitle() {
+        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
+        ActionBar mActionBar = appCompatActivity.getSupportActionBar();
+        if (mActionBar != null) mActionBar.setSubtitle(artistName);
     }
 
     private void setRecyclerView() {

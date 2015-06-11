@@ -125,14 +125,14 @@ public class MainActivityFragment extends Fragment {
         }
     }
 
-    Runnable update_recycler_view = new Runnable() {
+    private Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
             mShowArtistsAdapter.swap(artistsList);
         }
     };
 
-    Runnable show_toast_not_found = new Runnable() {
+    private Runnable show_toast_not_found = new Runnable() {
         @Override
         public void run() {
             if (mToast != null) mToast.cancel();

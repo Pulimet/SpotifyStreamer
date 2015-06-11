@@ -1,18 +1,19 @@
 package net.alexandroid.spotifystreamer.activities;
 
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import net.alexandroid.spotifystreamer.R;
 
-public class TracksActivity extends ActionBarActivity {
+public class TracksActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tracks);
+        getSupportActionBar();
     }
 
     @Override
