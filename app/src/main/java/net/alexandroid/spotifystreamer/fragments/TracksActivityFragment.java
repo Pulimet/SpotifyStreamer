@@ -13,10 +13,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.squareup.picasso.Picasso;
+
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.activities.TracksActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowTracksAdapter;
+import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.objects.CustomTrack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -33,13 +38,14 @@ import retrofit.client.Response;
 
 public class TracksActivityFragment extends Fragment {
 
+    private static final String TAG = "TracksActivityFragment";
     public static final String PREVIEW_URL = "preview";
     public static final String BIG_IMG_URL = "big";
     private String artistId, artistName;
     private SpotifyService mSpotifyService;
     private RecyclerView mRecyclerView;
     private ShowTracksAdapter mShowTracksAdapter;
-    private List<Track> trackList;
+    private ArrayList<CustomTrack> customTrackList = new ArrayList<>();
 
     public TracksActivityFragment() {
     }
@@ -47,18 +53,35 @@ public class TracksActivityFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SpotifyApi api = new SpotifyApi();
-        mSpotifyService = api.getService();
+        if (savedInstanceState == null) {
+            SpotifyApi api = new SpotifyApi();
+            mSpotifyService = api.getService();
+        }
     }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList("track_list", customTrackList);
+        super.onSaveInstanceState(outState);
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_tracks, container, false);
+        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
+
         getArtistIdFromIntent();
         setActionBarSubTitle();
-        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         setRecyclerView();
-        getArtistTracks();
+        if (savedInstanceState == null) {
+            MyLogger.log(TAG, "get the artist tracks from api");
+            getArtistTracks();
+        } else {
+            MyLogger.log(TAG, "get the artist tracks from savedInstanceState");
+            customTrackList = savedInstanceState.getParcelableArrayList("track_list");
+            mShowTracksAdapter.swap(customTrackList);
+        }
         return rootView;
     }
 
@@ -82,17 +105,12 @@ public class TracksActivityFragment extends Fragment {
         ShowTracksAdapter.ClickListener mClickListener = new ShowTracksAdapter.ClickListener() {
             @Override
             public void onClick(int position) {
-                List<Image> imageList = trackList.get(position).album.images;
-                String imgUrl = "";
-                if (imageList != null && imageList.size() != 0) {
-                    imgUrl = imageList.get(0).url;
-                }
-                String previewUrl = trackList.get(position).preview_url;
-
-                startPlayerActivity(previewUrl, imgUrl);
+                String bigImgUrl = customTrackList.get(position).getBigImgUrl();
+                String previewUrl = customTrackList.get(position).getPreviewUrl();
+                startPlayerActivity(previewUrl, bigImgUrl);
             }
         };
-        mShowTracksAdapter = new ShowTracksAdapter(trackList, mClickListener);
+        mShowTracksAdapter = new ShowTracksAdapter(customTrackList, mClickListener);
         mRecyclerView.setAdapter(mShowTracksAdapter);
     }
 
@@ -110,13 +128,23 @@ public class TracksActivityFragment extends Fragment {
         mSpotifyService.getArtistTopTrack(artistId, options, new Callback<Tracks>() {
             @Override
             public void success(Tracks tracks, Response response) {
-                trackList = tracks.tracks;
+                MyLogger.log(TAG, "getArtistTracks#success");
+                for (Track track : tracks.tracks) {
+                    List<Image> imageList = track.album.images;
+                    String bigImgUrl = "";
+                    String smallImgUrl = "";
+                    if (imageList != null && imageList.size() != 0) {
+                        bigImgUrl = imageList.get(0).url;
+                        smallImgUrl = imageList.get(imageList.size() - 1).url;
+                    }
+                    customTrackList.add(new CustomTrack(track.name, track.album.name, smallImgUrl, bigImgUrl, track.preview_url));
+                }
                 getActivity().runOnUiThread(update_recycler_view);
             }
 
             @Override
             public void failure(RetrofitError error) {
-
+                MyLogger.log(TAG, "getArtistTracks#error");
             }
         });
     }
@@ -124,7 +152,8 @@ public class TracksActivityFragment extends Fragment {
     Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
-            mShowTracksAdapter.swap(trackList);
+            MyLogger.log(TAG, "update_recycler_view --- customTrackList.size(): " + customTrackList.size());
+            mShowTracksAdapter.swap(customTrackList);
         }
     };
 }

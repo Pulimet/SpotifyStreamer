@@ -11,15 +11,16 @@ import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.objects.CustomTrack;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.Image;
-import kaaes.spotify.webapi.android.models.Track;
 
 public class ShowTracksAdapter extends RecyclerView.Adapter<ShowTracksAdapter.ViewHolder> {
     private static final String TAG = "ShowTracksAdapter";
-    private List<Track> listOfTracks;
+
+    private List<CustomTrack> customTrackList;
     private static ClickListener mClickListener;
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -55,8 +56,8 @@ public class ShowTracksAdapter extends RecyclerView.Adapter<ShowTracksAdapter.Vi
         }
     }
 
-    public ShowTracksAdapter(List<Track> tracks, ClickListener clickListener) {
-        listOfTracks = tracks;
+    public ShowTracksAdapter(ArrayList<CustomTrack> tracks, ClickListener clickListener) {
+        customTrackList = tracks;
         mClickListener = clickListener;
     }
 
@@ -70,33 +71,27 @@ public class ShowTracksAdapter extends RecyclerView.Adapter<ShowTracksAdapter.Vi
     public void onBindViewHolder(ViewHolder viewHolder, final int position) {
         // Album image
         ImageView imageView = viewHolder.getImageView();
-        List<Image> imageList = listOfTracks.get(position).album.images;
-        if (imageList != null && imageList.size() != 0) {
-            String url = imageList.get(imageList.size() - 1).url;
-            Picasso.with(imageView.getContext()).load(url).into(imageView);
+        String imgUrl = customTrackList.get(position).getSmallImgUrl();
+        if (imgUrl.length() > 0) {
+            Picasso.with(imageView.getContext()).load(imgUrl).into(imageView);
         }
 
         // Track name
-        viewHolder.getTrackTextView().setText(listOfTracks.get(position).name);
+        viewHolder.getTrackTextView().setText(customTrackList.get(position).getTitle());
 
         // Album name
-        viewHolder.getALbumTextView().setText(listOfTracks.get(position).album.name);
+        viewHolder.getALbumTextView().setText(customTrackList.get(position).getAlbum());
     }
 
-    public void swap(List<Track> tracks) {
-        if (listOfTracks == null) {
-            listOfTracks = tracks;
-        } else {
-            listOfTracks.clear();
-            listOfTracks.addAll(tracks);
-        }
+    public void swap(List<CustomTrack> tracks) {
+        customTrackList = tracks;
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount() {
-        if (listOfTracks != null) {
-            return listOfTracks.size();
+        if (customTrackList != null) {
+            return customTrackList.size();
         } else {
             return 0;
         }
