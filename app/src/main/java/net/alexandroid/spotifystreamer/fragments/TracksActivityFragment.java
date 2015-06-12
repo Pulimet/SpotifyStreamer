@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Image;
@@ -42,15 +44,13 @@ public class TracksActivityFragment extends Fragment {
     public static final String BIG_IMG_URL = "big";
 
     private String artistId, artistName;
-
     private ArrayList<CustomTrack> customTrackList = new ArrayList<>();
-
     private SpotifyService mSpotifyService;
-    private RecyclerView mRecyclerView;
     private ShowTracksAdapter mShowTracksAdapter;
-    private ProgressBar mPogressBar;
-    private TextView tvNotFound;
 
+    @InjectView(R.id.recyclerView)  RecyclerView mRecyclerView;
+    @InjectView(R.id.progressBar)  ProgressBar mPogressBar;
+    @InjectView(R.id.tv_tacks_not_found)  TextView tvNotFound;
 
     public TracksActivityFragment() {
     }
@@ -70,14 +70,10 @@ public class TracksActivityFragment extends Fragment {
         super.onSaveInstanceState(outState);
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_tracks, container, false);
-        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
-        mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
-        tvNotFound = (TextView) rootView.findViewById(R.id.tv_tacks_not_found);
-
+        ButterKnife.inject(this, rootView);
         getArtistIdFromIntent();
         setActionBarSubTitle();
         setRecyclerView();
@@ -182,6 +178,12 @@ public class TracksActivityFragment extends Fragment {
         } else {
             mPogressBar.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        ButterKnife.reset(this);
     }
 
 

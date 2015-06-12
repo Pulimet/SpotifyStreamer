@@ -23,6 +23,8 @@ import net.alexandroid.spotifystreamer.objects.CustomArtist;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
@@ -39,14 +41,13 @@ public class MainActivityFragment extends Fragment {
     private boolean boolSuspend;
 
     private ArrayList<CustomArtist> customArtistList = new ArrayList<>();
-
-    private RecyclerView mRecyclerView;
     private ShowArtistsAdapter mShowArtistsAdapter;
-    private SearchView mSearchView;
     private SpotifyService mSpotifyService;
     private Toast mToast;
-    private ProgressBar mPogressBar;
 
+    @InjectView(R.id.recyclerView)  RecyclerView mRecyclerView;
+    @InjectView(R.id.searchView)  SearchView mSearchView;
+    @InjectView(R.id.progressBar)  ProgressBar mPogressBar;
 
     public MainActivityFragment() {
     }
@@ -67,7 +68,7 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        setViews(rootView);
+        ButterKnife.inject(this, rootView);
         setRecyclerView();
         setSearchViewListener();
 
@@ -80,11 +81,6 @@ public class MainActivityFragment extends Fragment {
         return rootView;
     }
 
-    private void setViews(View rootView) {
-        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
-        mSearchView = (SearchView) rootView.findViewById(R.id.searchView);
-        mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
-    }
 
     private void setRecyclerView() {
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getActivity());
@@ -190,5 +186,11 @@ public class MainActivityFragment extends Fragment {
         } else {
             mPogressBar.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        ButterKnife.reset(this);
     }
 }
