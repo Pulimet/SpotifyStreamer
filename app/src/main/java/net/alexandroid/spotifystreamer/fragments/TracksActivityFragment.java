@@ -12,6 +12,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.squareup.picasso.Picasso;
 
@@ -41,11 +42,16 @@ public class TracksActivityFragment extends Fragment {
     private static final String TAG = "TracksActivityFragment";
     public static final String PREVIEW_URL = "preview";
     public static final String BIG_IMG_URL = "big";
+
     private String artistId, artistName;
+
+    private ArrayList<CustomTrack> customTrackList = new ArrayList<>();
+
     private SpotifyService mSpotifyService;
     private RecyclerView mRecyclerView;
     private ShowTracksAdapter mShowTracksAdapter;
-    private ArrayList<CustomTrack> customTrackList = new ArrayList<>();
+    private ProgressBar mPogressBar;
+
 
     public TracksActivityFragment() {
     }
@@ -70,6 +76,7 @@ public class TracksActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_tracks, container, false);
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
+        mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
 
         getArtistIdFromIntent();
         setActionBarSubTitle();
@@ -80,6 +87,7 @@ public class TracksActivityFragment extends Fragment {
         } else {
             MyLogger.log(TAG, "get the artist tracks from savedInstanceState");
             customTrackList = savedInstanceState.getParcelableArrayList("track_list");
+            setProgressBarVisibility(false);
             mShowTracksAdapter.swap(customTrackList);
         }
         return rootView;
@@ -150,7 +158,16 @@ public class TracksActivityFragment extends Fragment {
     Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
+            setProgressBarVisibility(false);
             mShowTracksAdapter.swap(customTrackList);
         }
     };
+
+    private void setProgressBarVisibility(boolean visible) {
+        if (visible) {
+            mPogressBar.setVisibility(View.VISIBLE);
+        } else {
+            mPogressBar.setVisibility(View.GONE);
+        }
+    }
 }

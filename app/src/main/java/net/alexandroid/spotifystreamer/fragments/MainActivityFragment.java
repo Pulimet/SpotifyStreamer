@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import net.alexandroid.spotifystreamer.R;
@@ -34,13 +35,18 @@ import retrofit.client.Response;
 public class MainActivityFragment extends Fragment {
 
     private static final String TAG = "MainActivityFragment";
+
+    private boolean boolSuspend;
+
+    private ArrayList<CustomArtist> customArtistList = new ArrayList<>();
+
     private RecyclerView mRecyclerView;
     private ShowArtistsAdapter mShowArtistsAdapter;
     private EditText mEditText;
     private SpotifyService mSpotifyService;
-    private ArrayList<CustomArtist> customArtistList = new ArrayList<>();
     private Toast mToast;
-    private boolean boolSuspend;
+    private ProgressBar mPogressBar;
+
 
     public MainActivityFragment() {
     }
@@ -77,6 +83,7 @@ public class MainActivityFragment extends Fragment {
     private void setViews(View rootView) {
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         mEditText = (EditText) rootView.findViewById(R.id.editText);
+        mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
     }
 
     private void setRecyclerView() {
@@ -115,6 +122,9 @@ public class MainActivityFragment extends Fragment {
                 if (boolSuspend) {
                     boolSuspend = false;
                 } else {
+                    setProgressBarVisibility(true);
+                    customArtistList.clear();
+                    mShowArtistsAdapter.swap(customArtistList);
                     getArtists(s.toString());
                 }
             }
@@ -160,6 +170,7 @@ public class MainActivityFragment extends Fragment {
     private Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
+            setProgressBarVisibility(false);
             mShowArtistsAdapter.swap(customArtistList);
         }
     };
@@ -168,8 +179,17 @@ public class MainActivityFragment extends Fragment {
         @Override
         public void run() {
             if (mToast != null) mToast.cancel();
+            setProgressBarVisibility(false);
             mToast = Toast.makeText(getActivity(), getResources().getString(R.string.toast_not_found), Toast.LENGTH_SHORT);
             mToast.show();
         }
     };
+
+    private void setProgressBarVisibility(boolean visible) {
+        if (visible) {
+            mPogressBar.setVisibility(View.VISIBLE);
+        } else {
+            mPogressBar.setVisibility(View.GONE);
+        }
+    }
 }
