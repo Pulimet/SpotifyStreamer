@@ -17,13 +17,16 @@ import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.activities.TracksActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowArtistsAdapter;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.objects.CustomArtist;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
+import kaaes.spotify.webapi.android.models.Image;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -35,8 +38,9 @@ public class MainActivityFragment extends Fragment {
     private ShowArtistsAdapter mShowArtistsAdapter;
     private EditText mEditText;
     private SpotifyService mSpotifyService;
-    private List<Artist> artistsList;
+    private ArrayList<CustomArtist> customArtistList = new ArrayList<>();
     private Toast mToast;
+    private boolean boolSuspend;
 
     public MainActivityFragment() {
     }
@@ -49,11 +53,24 @@ public class MainActivityFragment extends Fragment {
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList("artist_list", customArtistList);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         setViews(rootView);
         setRecyclerView();
         setEditTextListener();
+
+        if (savedInstanceState != null) {
+            customArtistList = savedInstanceState.getParcelableArrayList("artist_list");
+            mShowArtistsAdapter.swap(customArtistList);
+            boolSuspend = true;
+        }
+
         return rootView;
     }
 
@@ -68,10 +85,10 @@ public class MainActivityFragment extends Fragment {
         ShowArtistsAdapter.ClickListener mClickListener = new ShowArtistsAdapter.ClickListener() {
             @Override
             public void onClick(int position) {
-                startTracksActivity(artistsList.get(position).id, artistsList.get(position).name);
+                startTracksActivity(customArtistList.get(position).getId(), customArtistList.get(position).getName());
             }
         };
-        mShowArtistsAdapter = new ShowArtistsAdapter(artistsList, mClickListener);
+        mShowArtistsAdapter = new ShowArtistsAdapter(customArtistList, mClickListener);
         mRecyclerView.setAdapter(mShowArtistsAdapter);
     }
 
@@ -95,7 +112,11 @@ public class MainActivityFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {
                 MyLogger.log(TAG, "Text: " + s.toString());
-                getArtists(s.toString());
+                if (boolSuspend) {
+                    boolSuspend = false;
+                } else {
+                    getArtists(s.toString());
+                }
             }
         });
     }
@@ -107,10 +128,21 @@ public class MainActivityFragment extends Fragment {
             mSpotifyService.searchArtists(artistStr, new Callback<ArtistsPager>() {
                 @Override
                 public void success(ArtistsPager artistsPager, Response response) {
-                    artistsList = artistsPager.artists.items;
+                    List<Artist> artistsList = artistsPager.artists.items;
                     if (artistsList == null || artistsList.size() == 0) {
                         getActivity().runOnUiThread(show_toast_not_found);
+                    } else {
+                        customArtistList.clear();
+                        for (Artist artist : artistsList) {
+                            List<Image> imageList = artist.images;
+                            String smallImgUrl = "";
+                            if (imageList != null && imageList.size() != 0) {
+                                smallImgUrl = imageList.get(imageList.size() - 1).url;
+                            }
+                            customArtistList.add(new CustomArtist(artist.name, smallImgUrl, artist.id));
+                        }
                     }
+
                     getActivity().runOnUiThread(update_recycler_view);
                 }
 
@@ -120,15 +152,15 @@ public class MainActivityFragment extends Fragment {
                 }
             });
         } else {
-            artistsList.clear();
-            mShowArtistsAdapter.swap(artistsList);
+            customArtistList.clear();
+            mShowArtistsAdapter.swap(customArtistList);
         }
     }
 
     private Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
-            mShowArtistsAdapter.swap(artistsList);
+            mShowArtistsAdapter.swap(customArtistList);
         }
     };
 

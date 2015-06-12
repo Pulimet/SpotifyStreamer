@@ -33,7 +33,6 @@ public class CustomTrack implements Parcelable {
     }
 
     public static final Parcelable.Creator<CustomTrack> CREATOR = new Parcelable.Creator<CustomTrack>() {
-        // распаковываем объект из Parcel
         public CustomTrack createFromParcel(Parcel in) {
             return new CustomTrack(in);
         }

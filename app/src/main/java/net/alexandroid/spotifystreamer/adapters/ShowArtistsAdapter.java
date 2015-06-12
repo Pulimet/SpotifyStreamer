@@ -11,6 +11,7 @@ import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.objects.CustomArtist;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ import kaaes.spotify.webapi.android.models.Image;
 public class ShowArtistsAdapter extends RecyclerView.Adapter<ShowArtistsAdapter.ViewHolder> {
     private static final String TAG = "ShowArtistsAdapter";
 
-    private List<Artist> listOfArtists;
+    private List<CustomArtist> customArtistList;
     private static ClickListener mClickListener;
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -51,8 +52,8 @@ public class ShowArtistsAdapter extends RecyclerView.Adapter<ShowArtistsAdapter.
         }
     }
 
-    public ShowArtistsAdapter(List<Artist> artists, ClickListener clickListener) {
-        listOfArtists = artists;
+    public ShowArtistsAdapter(List<CustomArtist> artists, ClickListener clickListener) {
+        customArtistList = artists;
         mClickListener = clickListener;
     }
 
@@ -66,30 +67,24 @@ public class ShowArtistsAdapter extends RecyclerView.Adapter<ShowArtistsAdapter.
     public void onBindViewHolder(ViewHolder viewHolder, final int position) {
         // image
         ImageView imageView = viewHolder.getImageView();
-        List<Image> imageList = listOfArtists.get(position).images;
-        if (imageList != null && imageList.size() != 0) {
-            String url = imageList.get(imageList.size() - 1).url;
+        String url = customArtistList.get(position).getImage();
+        if (url.length() > 0) {
             Picasso.with(imageView.getContext()).load(url).into(imageView);
         }
 
         // text
-        viewHolder.getTextView().setText(listOfArtists.get(position).name);
+        viewHolder.getTextView().setText(customArtistList.get(position).getName());
     }
 
-    public void swap(List<Artist> artists) {
-        if (listOfArtists == null) {
-            listOfArtists = artists;
-        } else {
-            listOfArtists.clear();
-            listOfArtists.addAll(artists);
-        }
+    public void swap(List<CustomArtist> artists) {
+        customArtistList = artists;
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount() {
-        if (listOfArtists != null) {
-            return listOfArtists.size();
+        if (customArtistList != null) {
+            return customArtistList.size();
         } else {
             return 0;
         }

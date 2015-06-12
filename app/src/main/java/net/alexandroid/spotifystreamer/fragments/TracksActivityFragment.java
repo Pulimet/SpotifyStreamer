@@ -128,7 +128,6 @@ public class TracksActivityFragment extends Fragment {
         mSpotifyService.getArtistTopTrack(artistId, options, new Callback<Tracks>() {
             @Override
             public void success(Tracks tracks, Response response) {
-                MyLogger.log(TAG, "getArtistTracks#success");
                 for (Track track : tracks.tracks) {
                     List<Image> imageList = track.album.images;
                     String bigImgUrl = "";
@@ -144,7 +143,6 @@ public class TracksActivityFragment extends Fragment {
 
             @Override
             public void failure(RetrofitError error) {
-                MyLogger.log(TAG, "getArtistTracks#error");
             }
         });
     }
@@ -152,7 +150,6 @@ public class TracksActivityFragment extends Fragment {
     Runnable update_recycler_view = new Runnable() {
         @Override
         public void run() {
-            MyLogger.log(TAG, "update_recycler_view --- customTrackList.size(): " + customTrackList.size());
             mShowTracksAdapter.swap(customTrackList);
         }
     };
