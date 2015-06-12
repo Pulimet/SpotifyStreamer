@@ -5,12 +5,12 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -42,7 +42,7 @@ public class MainActivityFragment extends Fragment {
 
     private RecyclerView mRecyclerView;
     private ShowArtistsAdapter mShowArtistsAdapter;
-    private EditText mEditText;
+    private SearchView mSearchView;
     private SpotifyService mSpotifyService;
     private Toast mToast;
     private ProgressBar mPogressBar;
@@ -69,7 +69,7 @@ public class MainActivityFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         setViews(rootView);
         setRecyclerView();
-        setEditTextListener();
+        setSearchViewListener();
 
         if (savedInstanceState != null) {
             customArtistList = savedInstanceState.getParcelableArrayList("artist_list");
@@ -82,7 +82,7 @@ public class MainActivityFragment extends Fragment {
 
     private void setViews(View rootView) {
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
-        mEditText = (EditText) rootView.findViewById(R.id.editText);
+        mSearchView = (SearchView) rootView.findViewById(R.id.searchView);
         mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
     }
 
@@ -106,27 +106,25 @@ public class MainActivityFragment extends Fragment {
         startActivity(intent);
     }
 
-    private void setEditTextListener() {
-        mEditText.addTextChangedListener(new TextWatcher() {
+    private void setSearchViewListener() {
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            public boolean onQueryTextSubmit(String query) {
+                return false;
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                MyLogger.log(TAG, "Text: " + s.toString());
+            public boolean onQueryTextChange(String newText) {
+                MyLogger.log(TAG, "Text: " + newText);
                 if (boolSuspend) {
                     boolSuspend = false;
                 } else {
                     setProgressBarVisibility(true);
                     customArtistList.clear();
                     mShowArtistsAdapter.swap(customArtistList);
-                    getArtists(s.toString());
+                    getArtists(newText);
                 }
+                return false;
             }
         });
     }
