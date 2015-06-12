@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -13,8 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-
-import com.squareup.picasso.Picasso;
+import android.widget.TextView;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.activities.TracksActivity;
@@ -51,6 +49,7 @@ public class TracksActivityFragment extends Fragment {
     private RecyclerView mRecyclerView;
     private ShowTracksAdapter mShowTracksAdapter;
     private ProgressBar mPogressBar;
+    private TextView tvNotFound;
 
 
     public TracksActivityFragment() {
@@ -77,6 +76,7 @@ public class TracksActivityFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_tracks, container, false);
         mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         mPogressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
+        tvNotFound = (TextView) rootView.findViewById(R.id.tv_tacks_not_found);
 
         getArtistIdFromIntent();
         setActionBarSubTitle();
@@ -136,30 +136,43 @@ public class TracksActivityFragment extends Fragment {
         mSpotifyService.getArtistTopTrack(artistId, options, new Callback<Tracks>() {
             @Override
             public void success(Tracks tracks, Response response) {
-                for (Track track : tracks.tracks) {
-                    List<Image> imageList = track.album.images;
-                    String bigImgUrl = "";
-                    String smallImgUrl = "";
-                    if (imageList != null && imageList.size() != 0) {
-                        bigImgUrl = imageList.get(0).url;
-                        smallImgUrl = imageList.get(imageList.size() - 1).url;
+                if (tracks.tracks != null && tracks.tracks.size() > 0) {
+                    for (Track track : tracks.tracks) {
+                        List<Image> imageList = track.album.images;
+                        String bigImgUrl = "";
+                        String smallImgUrl = "";
+                        if (imageList != null && imageList.size() != 0) {
+                            bigImgUrl = imageList.get(0).url;
+                            smallImgUrl = imageList.get(imageList.size() - 1).url;
+                        }
+                        customTrackList.add(new CustomTrack(track.name, track.album.name, smallImgUrl, bigImgUrl, track.preview_url));
                     }
-                    customTrackList.add(new CustomTrack(track.name, track.album.name, smallImgUrl, bigImgUrl, track.preview_url));
+                } else {
+                    getActivity().runOnUiThread(showNoResultsMessage);
                 }
-                getActivity().runOnUiThread(update_recycler_view);
+                getActivity().runOnUiThread(updateRecyclerView);
             }
 
             @Override
             public void failure(RetrofitError error) {
+                getActivity().runOnUiThread(showNoResultsMessage);
             }
         });
     }
 
-    Runnable update_recycler_view = new Runnable() {
+    private Runnable updateRecyclerView = new Runnable() {
         @Override
         public void run() {
             setProgressBarVisibility(false);
             mShowTracksAdapter.swap(customTrackList);
+        }
+    };
+
+    private Runnable showNoResultsMessage = new Runnable() {
+        @Override
+        public void run() {
+            setProgressBarVisibility(false);
+            tvNotFound.setVisibility(View.VISIBLE);
         }
     };
 
@@ -170,4 +183,6 @@ public class TracksActivityFragment extends Fragment {
             mPogressBar.setVisibility(View.GONE);
         }
     }
+
+
 }

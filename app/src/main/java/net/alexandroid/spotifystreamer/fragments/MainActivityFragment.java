@@ -140,7 +140,7 @@ public class MainActivityFragment extends Fragment {
                 public void success(ArtistsPager artistsPager, Response response) {
                     List<Artist> artistsList = artistsPager.artists.items;
                     if (artistsList == null || artistsList.size() == 0) {
-                        getActivity().runOnUiThread(show_toast_not_found);
+                        getActivity().runOnUiThread(showToastNotFound);
                     } else {
                         customArtistList.clear();
                         for (Artist artist : artistsList) {
@@ -153,21 +153,22 @@ public class MainActivityFragment extends Fragment {
                         }
                     }
 
-                    getActivity().runOnUiThread(update_recycler_view);
+                    getActivity().runOnUiThread(updateRecyclerView);
                 }
 
                 @Override
                 public void failure(RetrofitError error) {
-                    getActivity().runOnUiThread(show_toast_not_found);
+                    getActivity().runOnUiThread(showToastNotFound);
                 }
             });
         } else {
             customArtistList.clear();
+            setProgressBarVisibility(false);
             mShowArtistsAdapter.swap(customArtistList);
         }
     }
 
-    private Runnable update_recycler_view = new Runnable() {
+    private Runnable updateRecyclerView = new Runnable() {
         @Override
         public void run() {
             setProgressBarVisibility(false);
@@ -175,7 +176,7 @@ public class MainActivityFragment extends Fragment {
         }
     };
 
-    private Runnable show_toast_not_found = new Runnable() {
+    private Runnable showToastNotFound = new Runnable() {
         @Override
         public void run() {
             if (mToast != null) mToast.cancel();

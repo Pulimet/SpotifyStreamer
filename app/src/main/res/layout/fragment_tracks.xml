@@ -9,6 +9,16 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".TracksActivityFragment">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/no_result_message"
+        android:id="@+id/tv_tacks_not_found"
+        android:layout_margin="50dp"
+        android:layout_gravity="center_horizontal"
+        android:visibility="gone" />
+
     <ProgressBar
         android:id="@+id/progressBar"
         style="@android:style/Widget.ProgressBar.Large.Inverse"
