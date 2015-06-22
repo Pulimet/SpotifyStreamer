@@ -35,6 +35,11 @@ public class TracksActivity extends AppCompatActivity {
             return true;
         }
 
+        if(id == android.R.id.home){
+            super.onBackPressed();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 }
