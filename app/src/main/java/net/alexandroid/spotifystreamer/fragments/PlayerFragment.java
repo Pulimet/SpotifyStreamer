@@ -2,8 +2,6 @@ package net.alexandroid.spotifystreamer.fragments;
 
 import android.app.Dialog;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
@@ -18,9 +16,10 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
+import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
+import net.alexandroid.spotifystreamer.services.PlayerService;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 import butterknife.ButterKnife;
@@ -32,9 +31,9 @@ import butterknife.InjectView;
 public class PlayerFragment extends DialogFragment {
 
     private String artistName;
+    private boolean isPlaying;
     private int position, resButtonPlay, resButtonPause;
     private ArrayList<CustomTrack> customTrackList;
-    private MediaPlayer mediaPlayer;
 
     @InjectView(R.id.tvArtist)
     TextView tvArtist;
@@ -70,22 +69,25 @@ public class PlayerFragment extends DialogFragment {
 
         // TODO Find another solution
         Intent intent = getActivity().getIntent();
-        if (intent != null && intent.hasExtra(Intent.EXTRA_STREAM)) {
-            customTrackList = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-            artistName = intent.getStringExtra(Intent.EXTRA_REFERRER_NAME);
-            position = intent.getIntExtra(Intent.EXTRA_SHORTCUT_NAME, 0);
+        if (intent != null && intent.hasExtra(PlayerService.CUSTOM_TRACK_LIST)) {
+            customTrackList = intent.getParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST);
+            artistName = intent.getStringExtra(PlayerService.ARTIST_NAME);
+            position = intent.getIntExtra(PlayerService.POSITION, 0);
         } else {
             Bundle arguments = getArguments();
             if (arguments != null) {
-                customTrackList = arguments.getParcelableArrayList(Intent.EXTRA_STREAM);
-                artistName = arguments.getString(Intent.EXTRA_REFERRER_NAME);
-                position = arguments.getInt(Intent.EXTRA_SHORTCUT_NAME, 0);
+                customTrackList = arguments.getParcelableArrayList(PlayerService.CUSTOM_TRACK_LIST);
+                artistName = arguments.getString(PlayerService.ARTIST_NAME);
+                position = arguments.getInt(PlayerService.POSITION, 0);
             }
         }
-
-        setTrackData();
-        setButtonsClickListener();
-        loadAndPlayCurrentPosition();
+        if (customTrackList != null) {
+            setTrackData();
+            setButtonsClickListener();
+            loadAndPlayCurrentPosition();
+        } else {
+            MyLogger.log("ZAQ-PlayerFragmenr", "customTrackList == null");
+        }
         return rootView;
     }
 
@@ -142,44 +144,29 @@ public class PlayerFragment extends DialogFragment {
     }
 
 
-    public void loadAndPlayCurrentPosition() {
-        try {
-            btnPlay.setImageResource(resButtonPause);
-            if (mediaPlayer == null) {
-                mediaPlayer = new MediaPlayer();
-            } else {
-                mediaPlayer.reset();
-            }
-            String url = customTrackList.get(position).getPreviewUrl();
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.setDataSource(url);
-            mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mediaPlayer.start();
-                }
-            });
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    btnPlay.setImageResource(resButtonPlay);
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void loadAndPlayCurrentPosition() {
+        String url = customTrackList.get(position).getPreviewUrl();
+        Intent intent = new Intent(getActivity(), PlayerService.class);
+        intent.setAction(PlayerService.ACTION_PLAY);
+        intent.putParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST, customTrackList);
+        intent.putExtra(PlayerService.ARTIST_NAME, artistName);
+        intent.putExtra(PlayerService.POSITION, position);
+        btnPlay.setImageResource(resButtonPause);
+        isPlaying = true;
+        getActivity().startService(intent);
     }
 
     private void playOrPause() {
-        if (mediaPlayer == null) {
-            loadAndPlayCurrentPosition();
-        } else if (mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
+        if (isPlaying) {
             btnPlay.setImageResource(resButtonPlay);
+            isPlaying = false;
+            Intent intent = new Intent(getActivity(), PlayerService.class);
+            intent.setAction(PlayerService.ACTION_PAUSE);
+            getActivity().startService(intent);
         } else {
-            mediaPlayer.start();
             btnPlay.setImageResource(resButtonPause);
+            isPlaying = true;
+            loadAndPlayCurrentPosition();
         }
     }
 
@@ -188,11 +175,6 @@ public class PlayerFragment extends DialogFragment {
     public void onStop() {
         super.onStop();
         btnPlay.setImageResource(resButtonPlay);
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
     }
 
     @Override

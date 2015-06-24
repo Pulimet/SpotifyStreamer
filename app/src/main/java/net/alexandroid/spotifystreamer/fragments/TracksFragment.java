@@ -21,6 +21,7 @@ import net.alexandroid.spotifystreamer.activities.PlayerActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowTracksAdapter;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
+import net.alexandroid.spotifystreamer.services.PlayerService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -130,17 +131,17 @@ public class TracksFragment extends Fragment {
         if (MainActivity.sWideScreen) {
             FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
             Bundle args = new Bundle();
-            args.putParcelableArrayList(Intent.EXTRA_STREAM, customTrackList);
-            args.putString(Intent.EXTRA_REFERRER_NAME, artistName);
-            args.putInt(Intent.EXTRA_SHORTCUT_NAME, position);
+            args.putParcelableArrayList(PlayerService.CUSTOM_TRACK_LIST, customTrackList);
+            args.putString(PlayerService.ARTIST_NAME, artistName);
+            args.putInt(PlayerService.POSITION, position);
             PlayerFragment playerFragment = new PlayerFragment();
             playerFragment.setArguments(args);
             playerFragment.show(fragmentManager, "dialog");
         } else {
             Intent intent = new Intent(getActivity(), PlayerActivity.class);
-            intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, customTrackList);
-            intent.putExtra(Intent.EXTRA_REFERRER_NAME, artistName);
-            intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, position);
+            intent.putParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST, customTrackList);
+            intent.putExtra(PlayerService.ARTIST_NAME, artistName);
+            intent.putExtra(PlayerService.POSITION, position);
             startActivity(intent);
         }
     }
