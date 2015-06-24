@@ -1,13 +1,10 @@
 package net.alexandroid.spotifystreamer.fragments;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import net.alexandroid.spotifystreamer.R;
-import net.alexandroid.spotifystreamer.activities.TracksActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowArtistsAdapter;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomArtist;
@@ -34,9 +30,9 @@ import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class MainActivityFragment extends Fragment {
+public class MainFragment extends Fragment {
 
-    private static final String TAG = "MainActivityFragment";
+    private static final String TAG = "MainFragment";
 
     private boolean boolSuspend;
 
@@ -49,7 +45,12 @@ public class MainActivityFragment extends Fragment {
     @InjectView(R.id.searchView)  SearchView mSearchView;
     @InjectView(R.id.progressBar)  ProgressBar mPogressBar;
 
-    public MainActivityFragment() {
+    public MainFragment() {
+    }
+
+
+    public interface FragmentCallback {
+        void onArtistSelected(String artistId, String artistName);
     }
 
     @Override
@@ -88,19 +89,20 @@ public class MainActivityFragment extends Fragment {
         ShowArtistsAdapter.ClickListener mClickListener = new ShowArtistsAdapter.ClickListener() {
             @Override
             public void onClick(int position) {
-                startTracksActivity(customArtistList.get(position).getId(), customArtistList.get(position).getName());
+                //startTracksActivity(customArtistList.get(position).getId(), customArtistList.get(position).getName());
+                ((FragmentCallback) getActivity()).onArtistSelected(customArtistList.get(position).getId(), customArtistList.get(position).getName());
             }
         };
         mShowArtistsAdapter = new ShowArtistsAdapter(customArtistList, mClickListener);
         mRecyclerView.setAdapter(mShowArtistsAdapter);
     }
 
-    private void startTracksActivity(String artistId, String artistName) {
-        Intent intent = new Intent(getActivity(), TracksActivity.class);
-        intent.putExtra(Intent.EXTRA_TEXT, artistId);
-        intent.putExtra(Intent.EXTRA_REFERRER_NAME, artistName);
-        startActivity(intent);
-    }
+//    private void startTracksActivity(String artistId, String artistName) {
+//        Intent intent = new Intent(getActivity(), TracksActivity.class);
+//        intent.putExtra(Intent.EXTRA_TEXT, artistId);
+//        intent.putExtra(Intent.EXTRA_REFERRER_NAME, artistName);
+//        startActivity(intent);
+//    }
 
     private void setSearchViewListener() {
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

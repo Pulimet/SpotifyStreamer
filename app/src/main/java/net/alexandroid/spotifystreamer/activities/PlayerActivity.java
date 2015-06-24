@@ -6,20 +6,25 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import net.alexandroid.spotifystreamer.R;
+import net.alexandroid.spotifystreamer.fragments.PlayerFragment;
 
-public class TracksActivity extends AppCompatActivity {
+public class PlayerActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_tracks);
-        getSupportActionBar();
+        setContentView(R.layout.activity_player);
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment, new PlayerFragment()).commit();
+        }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_tracks, menu);
+        getMenuInflater().inflate(R.menu.menu_player, menu);
         return true;
     }
 
@@ -28,14 +33,13 @@ public class TracksActivity extends AppCompatActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
 
-        switch (item.getItemId()) {
-            case R.id.action_settings:
-                return true;
-            case android.R.id.home:
-                super.onBackPressed();
-                return true;
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 }

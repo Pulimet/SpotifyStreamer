@@ -4,10 +4,16 @@
 
     <string name="desc">desc</string>
     <string name="fake_artist">Coldplay</string>
+    <string name="fake_album">Ghost Album</string>
+    <string name="fake_song_name">A Sky Song</string>
+    <string name="fake_time">0:00</string>
+    <string name="fake_duration">0:31</string>
     <string name="hint_artist">Artist name…</string>
     <string name="title_activity_tracks">Top 10 Tracks</string>
     <string name="toast_not_found">Artist not found. Try again.</string>
     <string name="no_result_message">Tracks not found. :(</string>
+    <string name="title_activity_player">Spotify Streamer</string>
+    <string name="hello_world">Hello world!</string>
 
 
 </resources>

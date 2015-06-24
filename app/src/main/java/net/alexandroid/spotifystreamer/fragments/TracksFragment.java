@@ -4,6 +4,7 @@ package net.alexandroid.spotifystreamer.fragments;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -15,7 +16,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import net.alexandroid.spotifystreamer.R;
-import net.alexandroid.spotifystreamer.activities.TracksActivity;
+import net.alexandroid.spotifystreamer.activities.MainActivity;
+import net.alexandroid.spotifystreamer.activities.PlayerActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowTracksAdapter;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
@@ -37,22 +39,23 @@ import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class TracksActivityFragment extends Fragment {
+public class TracksFragment extends Fragment {
 
-    private static final String TAG = "TracksActivityFragment";
-    public static final String PREVIEW_URL = "preview";
-    public static final String BIG_IMG_URL = "big";
+    private static final String TAG = "TracksFragment";
 
     private String artistId, artistName;
     private ArrayList<CustomTrack> customTrackList = new ArrayList<>();
     private SpotifyService mSpotifyService;
     private ShowTracksAdapter mShowTracksAdapter;
 
-    @InjectView(R.id.recyclerView)  RecyclerView mRecyclerView;
-    @InjectView(R.id.progressBar)  ProgressBar mPogressBar;
-    @InjectView(R.id.tv_tacks_not_found)  TextView tvNotFound;
+    @InjectView(R.id.recyclerView)
+    RecyclerView mRecyclerView;
+    @InjectView(R.id.progressBar)
+    ProgressBar mPogressBar;
+    @InjectView(R.id.tv_tacks_not_found)
+    TextView tvNotFound;
 
-    public TracksActivityFragment() {
+    public TracksFragment() {
     }
 
     @Override
@@ -90,10 +93,17 @@ public class TracksActivityFragment extends Fragment {
     }
 
     private void getArtistIdFromIntent() {
+        // TODO Find another solution
         Intent intent = getActivity().getIntent();
         if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
             artistId = intent.getStringExtra(Intent.EXTRA_TEXT);
             artistName = intent.getStringExtra(Intent.EXTRA_REFERRER_NAME);
+        } else {
+            Bundle arguments = getArguments();
+            if (arguments != null) {
+                artistId = arguments.getString(Intent.EXTRA_TEXT);
+                artistName = arguments.getString(Intent.EXTRA_REFERRER_NAME);
+            }
         }
     }
 
@@ -109,26 +119,37 @@ public class TracksActivityFragment extends Fragment {
         ShowTracksAdapter.ClickListener mClickListener = new ShowTracksAdapter.ClickListener() {
             @Override
             public void onClick(int position) {
-                String bigImgUrl = customTrackList.get(position).getBigImgUrl();
-                String previewUrl = customTrackList.get(position).getPreviewUrl();
-                startPlayerActivity(previewUrl, bigImgUrl);
+                startPlayerActivity(position);
             }
         };
         mShowTracksAdapter = new ShowTracksAdapter(customTrackList, mClickListener);
         mRecyclerView.setAdapter(mShowTracksAdapter);
     }
 
-    private void startPlayerActivity(String previewUrl, String imgUrl) {
-        // TODO TracksActivity = > PlayerActivity (Stage 2)
-        Intent intent = new Intent(getActivity(), TracksActivity.class);
-        intent.putExtra(PREVIEW_URL, previewUrl);
-        intent.putExtra(BIG_IMG_URL, imgUrl);
-        //startActivity(intent);
+    private void startPlayerActivity(int position) {
+        if (MainActivity.sWideScreen) {
+            FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+            Bundle args = new Bundle();
+            args.putParcelableArrayList(Intent.EXTRA_STREAM, customTrackList);
+            args.putString(Intent.EXTRA_REFERRER_NAME, artistName);
+            args.putInt(Intent.EXTRA_SHORTCUT_NAME, position);
+            PlayerFragment playerFragment = new PlayerFragment();
+            playerFragment.setArguments(args);
+            playerFragment.show(fragmentManager, "dialog");
+        } else {
+            Intent intent = new Intent(getActivity(), PlayerActivity.class);
+            intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, customTrackList);
+            intent.putExtra(Intent.EXTRA_REFERRER_NAME, artistName);
+            intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, position);
+            startActivity(intent);
+        }
     }
 
     private void getArtistTracks() {
         Map<String, Object> options = new HashMap<>();
-        options.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
+        // TODO change back
+        //options.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
+        options.put(SpotifyService.COUNTRY, Locale.US.getCountry());
         mSpotifyService.getArtistTopTrack(artistId, options, new Callback<Tracks>() {
             @Override
             public void success(Tracks tracks, Response response) {
@@ -138,10 +159,16 @@ public class TracksActivityFragment extends Fragment {
                         String bigImgUrl = "";
                         String smallImgUrl = "";
                         if (imageList != null && imageList.size() != 0) {
-                            bigImgUrl = imageList.get(0).url;
+                            bigImgUrl = "";
+                            for (Image image : imageList) {
+                                if (image.width < 700 && bigImgUrl.length() == 0) {
+                                    bigImgUrl = image.url;
+                                }
+                            }
                             smallImgUrl = imageList.get(imageList.size() - 1).url;
                         }
-                        customTrackList.add(new CustomTrack(track.name, track.album.name, smallImgUrl, bigImgUrl, track.preview_url));
+                        customTrackList.add(new CustomTrack(track.name, track.album.name, smallImgUrl, bigImgUrl,
+                                track.preview_url, String.valueOf(track.duration_ms)));
                     }
                 } else {
                     getActivity().runOnUiThread(showNoResultsMessage);

@@ -3,6 +3,7 @@
     package="net.alexandroid.spotifystreamer" >
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -25,6 +26,14 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="net.alexandroid.spotifystreamer.activities.MainActivity" />
+        </activity>
+        <activity
+            android:name=".activities.PlayerActivity"
+            android:label="@string/title_activity_player"
+            android:parentActivityName=".activities.TracksActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="net.alexandroid.spotifystreamer.activities.TracksActivity" />
         </activity>
     </application>
 

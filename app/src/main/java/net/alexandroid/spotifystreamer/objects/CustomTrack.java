@@ -3,19 +3,17 @@ package net.alexandroid.spotifystreamer.objects;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/**
- * Created by Alexey on 12.06.2015.
- */
 public class CustomTrack implements Parcelable {
 
-    String title, album, smallImgUrl, bigImgUrl, previewUrl;
+    String title, album, smallImgUrl, bigImgUrl, previewUrl, duration;
 
-    public CustomTrack(String title, String album, String smallImgUrl, String bigImgUrl, String previewUrl) {
+    public CustomTrack(String title, String album, String smallImgUrl, String bigImgUrl, String previewUrl, String duration) {
         this.title = title;
         this.album = album;
         this.smallImgUrl = smallImgUrl;
         this.bigImgUrl = bigImgUrl;
         this.previewUrl = previewUrl;
+        this.duration = duration;
     }
 
     @Override
@@ -30,6 +28,7 @@ public class CustomTrack implements Parcelable {
         dest.writeString(smallImgUrl);
         dest.writeString(bigImgUrl);
         dest.writeString(previewUrl);
+        dest.writeString(duration);
     }
 
     public static final Parcelable.Creator<CustomTrack> CREATOR = new Parcelable.Creator<CustomTrack>() {
@@ -48,6 +47,7 @@ public class CustomTrack implements Parcelable {
         smallImgUrl = parcel.readString();
         bigImgUrl = parcel.readString();
         previewUrl = parcel.readString();
+        duration = parcel.readString();
     }
 
     public String getTitle() {
@@ -68,5 +68,9 @@ public class CustomTrack implements Parcelable {
 
     public String getPreviewUrl() {
         return previewUrl;
+    }
+
+    public String getDuration() {
+        return duration;
     }
 }
