@@ -16,6 +16,9 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
+import net.alexandroid.spotifystreamer.events.PlayerCtrlEvent;
+import net.alexandroid.spotifystreamer.events.UiUpdateEvent;
+import net.alexandroid.spotifystreamer.helpers.Helper;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
 import net.alexandroid.spotifystreamer.services.PlayerService;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import de.greenrobot.event.EventBus;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -31,30 +35,20 @@ import butterknife.InjectView;
 public class PlayerFragment extends DialogFragment {
 
     private String artistName;
-    private boolean isPlaying;
-    private int position, resButtonPlay, resButtonPause;
+    private static int position;
+    private int resButtonPlay, resButtonPause;
     private ArrayList<CustomTrack> customTrackList;
 
-    @InjectView(R.id.tvArtist)
-    TextView tvArtist;
-    @InjectView(R.id.tvAlbum)
-    TextView tvAlbum;
-    @InjectView(R.id.imgAlbum)
-    ImageView imgAlbum;
-    @InjectView(R.id.tvSong)
-    TextView tvSong;
-    @InjectView(R.id.progressBar)
-    ProgressBar progressBar;
-    @InjectView(R.id.tvTime)
-    TextView tvTime;
-    @InjectView(R.id.tvDuration)
-    TextView tvDuration;
-    @InjectView(R.id.btnPrevious)
-    ImageButton btnPrevious;
-    @InjectView(R.id.btnPlay)
-    ImageButton btnPlay;
-    @InjectView(R.id.btnNext)
-    ImageButton btnNext;
+    @InjectView(R.id.tvArtist) TextView tvArtist;
+    @InjectView(R.id.tvAlbum) TextView tvAlbum;
+    @InjectView(R.id.imgAlbum) ImageView imgAlbum;
+    @InjectView(R.id.tvSong) TextView tvSong;
+    @InjectView(R.id.progressBar) ProgressBar progressBar;
+    @InjectView(R.id.tvTime) TextView tvTime;
+    @InjectView(R.id.tvDuration) TextView tvDuration;
+    @InjectView(R.id.btnPrevious) ImageButton btnPrevious;
+    @InjectView(R.id.btnPlay) ImageButton btnPlay;
+    @InjectView(R.id.btnNext) ImageButton btnNext;
 
     public PlayerFragment() {
     }
@@ -67,30 +61,39 @@ public class PlayerFragment extends DialogFragment {
         resButtonPause = getResources().getIdentifier("@android:drawable/ic_media_pause", null, getActivity().getPackageName());
         resButtonPlay = getResources().getIdentifier("@android:drawable/ic_media_play", null, getActivity().getPackageName());
 
+
         // TODO Find another solution
         Intent intent = getActivity().getIntent();
         if (intent != null && intent.hasExtra(PlayerService.CUSTOM_TRACK_LIST)) {
             customTrackList = intent.getParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST);
             artistName = intent.getStringExtra(PlayerService.ARTIST_NAME);
-            position = intent.getIntExtra(PlayerService.POSITION, 0);
+            if (savedInstanceState == null) position = intent.getIntExtra(PlayerService.POSITION, 0);
         } else {
             Bundle arguments = getArguments();
             if (arguments != null) {
                 customTrackList = arguments.getParcelableArrayList(PlayerService.CUSTOM_TRACK_LIST);
                 artistName = arguments.getString(PlayerService.ARTIST_NAME);
-                position = arguments.getInt(PlayerService.POSITION, 0);
+                if (savedInstanceState == null) position = arguments.getInt(PlayerService.POSITION, 0);
             }
         }
+
+
         if (customTrackList != null) {
-            setTrackData();
             setButtonsClickListener();
-            loadAndPlayCurrentPosition();
+            if (savedInstanceState == null) loadAndPlayCurrentPosition();
         } else {
             MyLogger.log("ZAQ-PlayerFragmenr", "customTrackList == null");
         }
         return rootView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (customTrackList != null) {
+            setTrackData();
+        }
+    }
 
     private void setButtonsClickListener() {
         View.OnClickListener clickListener = new View.OnClickListener() {
@@ -98,21 +101,21 @@ public class PlayerFragment extends DialogFragment {
             public void onClick(View v) {
                 switch (v.getId()) {
                     case R.id.btnPlay:
-                        playOrPause();
+                        EventBus.getDefault().post(new PlayerCtrlEvent(PlayerCtrlEvent.PLAY_OR_PAUSE));
                         break;
                     case R.id.btnNext:
                         if (position < customTrackList.size() - 1) {
+                            EventBus.getDefault().post(new PlayerCtrlEvent(PlayerCtrlEvent.NEXT));
                             position++;
                             setTrackData();
                         }
-                        loadAndPlayCurrentPosition();
                         break;
                     case R.id.btnPrevious:
                         if (position > 0) {
+                            EventBus.getDefault().post(new PlayerCtrlEvent(PlayerCtrlEvent.PREV));
                             position--;
                             setTrackData();
                         }
-                        loadAndPlayCurrentPosition();
                         break;
                 }
             }
@@ -130,51 +133,46 @@ public class PlayerFragment extends DialogFragment {
             Picasso.with(getActivity()).load(imgUrl).into(imgAlbum);
         }
         tvSong.setText(customTrackList.get(position).getTitle());
-        tvDuration.setText(formatDuration(customTrackList.get(position).getDuration()));
-    }
-
-    private String formatDuration(String duration) {
-        int miliSeconds = Integer.valueOf(duration);
-        int secs = miliSeconds / 1000;
-        int minutes = secs / 60;
-        int seconds = secs - 60 * minutes;
-        String zero = "";
-        if (seconds < 10) zero = "0";
-        return minutes + ":" + zero + seconds;
+        int duration = Integer.valueOf(customTrackList.get(position).getDuration());
+        tvDuration.setText(Helper.formatDuration(duration));
+        progressBar.setMax(duration / 1000);
     }
 
 
     private void loadAndPlayCurrentPosition() {
-        String url = customTrackList.get(position).getPreviewUrl();
         Intent intent = new Intent(getActivity(), PlayerService.class);
         intent.setAction(PlayerService.ACTION_PLAY);
         intent.putParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST, customTrackList);
         intent.putExtra(PlayerService.ARTIST_NAME, artistName);
         intent.putExtra(PlayerService.POSITION, position);
-        btnPlay.setImageResource(resButtonPause);
-        isPlaying = true;
         getActivity().startService(intent);
     }
 
-    private void playOrPause() {
-        if (isPlaying) {
-            btnPlay.setImageResource(resButtonPlay);
-            isPlaying = false;
-            Intent intent = new Intent(getActivity(), PlayerService.class);
-            intent.setAction(PlayerService.ACTION_PAUSE);
-            getActivity().startService(intent);
-        } else {
-            btnPlay.setImageResource(resButtonPause);
-            isPlaying = true;
-            loadAndPlayCurrentPosition();
+
+    public void onEventMainThread(UiUpdateEvent event) {
+        switch (event.duration) {
+            case UiUpdateEvent.PAUSE:
+                btnPlay.setImageResource(resButtonPlay);
+                break;
+            case UiUpdateEvent.PLAY:
+                btnPlay.setImageResource(resButtonPause);
+                break;
+            default:
+                tvTime.setText(Helper.formatDuration(event.duration));
+                progressBar.setProgress(event.duration / 1000);
         }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
 
     @Override
     public void onStop() {
+        EventBus.getDefault().unregister(this);
         super.onStop();
-        btnPlay.setImageResource(resButtonPlay);
     }
 
     @Override
@@ -182,6 +180,7 @@ public class PlayerFragment extends DialogFragment {
         super.onDestroy();
         ButterKnife.reset(this);
     }
+
 
     // The system calls this only when creating the layout in a dialog.
     @Override
