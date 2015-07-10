@@ -2,8 +2,15 @@ package net.alexandroid.spotifystreamer.helpers;
 
 import android.app.Application;
 
-class MyApplication extends Application {
+public class MyApplication extends Application {
     // ----- DEBUG ------------------------------------
     public static final boolean SHOW_LOGS = true;
     // -----------------------------------------------
+
+    public static boolean isPlayerVisible;
+
+    public static void setPlayerVisibility(boolean isPlayerVisible) {
+        MyApplication.isPlayerVisible = isPlayerVisible;
+    }
+
 }

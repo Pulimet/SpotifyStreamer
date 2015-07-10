@@ -20,13 +20,13 @@ import net.alexandroid.spotifystreamer.activities.MainActivity;
 import net.alexandroid.spotifystreamer.activities.PlayerActivity;
 import net.alexandroid.spotifystreamer.adapters.ShowTracksAdapter;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.helpers.ShPref;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
 import net.alexandroid.spotifystreamer.services.PlayerService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import butterknife.ButterKnife;
@@ -148,9 +148,9 @@ public class TracksFragment extends Fragment {
 
     private void getArtistTracks() {
         Map<String, Object> options = new HashMap<>();
-        // TODO change back
-        //options.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
-        options.put(SpotifyService.COUNTRY, Locale.US.getCountry());
+        String countryCode = ShPref.getCountryCode(getActivity().getApplicationContext());
+        MyLogger.log(TAG, "ShPref.getCountryCode: " + countryCode);
+        options.put(SpotifyService.COUNTRY, countryCode);
         mSpotifyService.getArtistTopTrack(artistId, options, new Callback<Tracks>() {
             @Override
             public void success(Tracks tracks, Response response) {

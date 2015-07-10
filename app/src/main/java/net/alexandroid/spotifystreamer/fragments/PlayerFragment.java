@@ -4,7 +4,12 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -19,6 +24,7 @@ import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.events.PlayerCtrlEvent;
 import net.alexandroid.spotifystreamer.events.UiUpdateEvent;
 import net.alexandroid.spotifystreamer.helpers.Helper;
+import net.alexandroid.spotifystreamer.helpers.MyApplication;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
 import net.alexandroid.spotifystreamer.services.PlayerService;
@@ -53,6 +59,11 @@ public class PlayerFragment extends DialogFragment {
     public PlayerFragment() {
     }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -61,28 +72,31 @@ public class PlayerFragment extends DialogFragment {
         resButtonPause = getResources().getIdentifier("@android:drawable/ic_media_pause", null, getActivity().getPackageName());
         resButtonPlay = getResources().getIdentifier("@android:drawable/ic_media_play", null, getActivity().getPackageName());
 
-
-        // TODO Find another solution
         Intent intent = getActivity().getIntent();
         if (intent != null && intent.hasExtra(PlayerService.CUSTOM_TRACK_LIST)) {
             customTrackList = intent.getParcelableArrayListExtra(PlayerService.CUSTOM_TRACK_LIST);
             artistName = intent.getStringExtra(PlayerService.ARTIST_NAME);
-            if (savedInstanceState == null) position = intent.getIntExtra(PlayerService.POSITION, 0);
+            if (savedInstanceState == null)
+                position = intent.getIntExtra(PlayerService.POSITION, 0);
         } else {
             Bundle arguments = getArguments();
             if (arguments != null) {
                 customTrackList = arguments.getParcelableArrayList(PlayerService.CUSTOM_TRACK_LIST);
                 artistName = arguments.getString(PlayerService.ARTIST_NAME);
-                if (savedInstanceState == null) position = arguments.getInt(PlayerService.POSITION, 0);
+                if (savedInstanceState == null)
+                    position = arguments.getInt(PlayerService.POSITION, 0);
             }
         }
 
 
         if (customTrackList != null) {
             setButtonsClickListener();
-            if (savedInstanceState == null) loadAndPlayCurrentPosition();
+            if (savedInstanceState == null) {
+                PlayerService.position = -1;
+                loadAndPlayCurrentPosition();
+            }
         } else {
-            MyLogger.log("ZAQ-PlayerFragmenr", "customTrackList == null");
+            MyLogger.log("ZAQ-PlayerFragment", "customTrackList == null");
         }
         return rootView;
     }
@@ -91,6 +105,7 @@ public class PlayerFragment extends DialogFragment {
     public void onResume() {
         super.onResume();
         if (customTrackList != null) {
+            if (PlayerService.position > -1) position = PlayerService.position;
             setTrackData();
         }
     }
@@ -167,11 +182,13 @@ public class PlayerFragment extends DialogFragment {
     public void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
+        MyApplication.setPlayerVisibility(true);
     }
 
     @Override
     public void onStop() {
         EventBus.getDefault().unregister(this);
+        MyApplication.setPlayerVisibility(false);
         super.onStop();
     }
 
@@ -188,6 +205,34 @@ public class PlayerFragment extends DialogFragment {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         return dialog;
+    }
+
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_tracks_f, menu);
+        MenuItem item = menu.findItem(R.id.menu_item_share);
+        ShareActionProvider mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
+        mShareActionProvider.setShareIntent(createShareIntent());
+    }
+
+    private Intent createShareIntent() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType("text/plain");
+        String title = customTrackList.get(position).getTitle();
+        String url = customTrackList.get(position).getPreviewUrl();
+        shareIntent.putExtra(Intent.EXTRA_TEXT, artistName + " - " + title + ": " + url);
+        return shareIntent;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_share:
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 }

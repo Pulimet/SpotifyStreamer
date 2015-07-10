@@ -4,26 +4,27 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v7.app.NotificationCompat;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.activities.PlayerActivity;
 import net.alexandroid.spotifystreamer.events.PlayerCtrlEvent;
 import net.alexandroid.spotifystreamer.events.UiUpdateEvent;
+import net.alexandroid.spotifystreamer.helpers.MyApplication;
 import net.alexandroid.spotifystreamer.helpers.MyLogger;
+import net.alexandroid.spotifystreamer.helpers.ShPref;
 import net.alexandroid.spotifystreamer.objects.CustomTrack;
 
 import java.io.IOException;
@@ -44,12 +45,11 @@ public class PlayerService extends Service {
     public static final String ARTIST_NAME = "ARTIST_NAME";
     private MediaPlayer mMediaPlayer;
     private ArrayList<CustomTrack> customTrackList;
-    private int position;
+    public static int position = -1;
     private String artistName;
     private Bitmap tempBitmap;
     private PendingIntent piPlayOrPause, piNext, piPrev;
     private MediaSessionCompat mMediaSession;
-    private boolean showControlsAtLockScreen = true;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -62,42 +62,10 @@ public class PlayerService extends Service {
         mMediaPlayer = new MediaPlayer();
         EventBus.getDefault().register(this);
 
-
         piPlayOrPause = getPendingIntent(PlayerService.ACTION_PLAY_OR_PAUSE);
         piNext = getPendingIntent(PlayerService.ACTION_NEXT);
         piPrev = getPendingIntent(PlayerService.ACTION_PREV);
-
-        setMediaSession();
     }
-
-    private void setMediaSession() {
-        ComponentName c = new ComponentName("net.alexandroid.spotifystreamer", "BackgroundService");
-        mMediaSession = new MediaSessionCompat(this, "Spotify", c, getPendingIntentForPlayer());
-        mMediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-/*        mMediaSession.setCallback(new MediaSessionCompat.Callback() {
-        });*/
-
-/*        MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
-        metadataBuilder
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10)
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, "1")
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "2")
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "3")
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, "4")
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 10000);
-        mMediaSession.setMetadata(metadataBuilder.build());*/
-
-/*        PlaybackStateCompat playbackState = new PlaybackStateCompat.Builder().setActions(
-                PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PLAY_PAUSE |
-                        PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PAUSE |
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
-                .setState(PlaybackStateCompat.STATE_PLAYING, position, 10, SystemClock.elapsedRealtime())
-                .build();
-        mMediaSession.setPlaybackState(playbackState);
-        mMediaSession.setSessionActivity(getPendingIntentForPlayer());
-        mMediaSession.setActive(true);*/
-    }
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -125,88 +93,55 @@ public class PlayerService extends Service {
     }
 
     private void startForeground() {
-        getBitmap();
-
-/*        int playOrPauseBtn;
-        if (show == SHOW_PLAY) {
-            playOrPauseBtn = resButtonPlay;
-        } else {
-            playOrPauseBtn = resButtonPause;
-        }
-
-
-        Notification notif = new NotificationCompat.Builder(this)
-                .setOngoing(true)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setTicker(songName)
-                .setLargeIcon(tempBitmap)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(artistName + " - " + albumName)
-                .setContentText(songName)
-                .setContentIntent(getPendingIntentForPlayer())
-                .setStyle(new NotificationCompat.MediaStyle()
-                        .setMediaSession(mMediaSession.getSessionToken())
-                        .setShowActionsInCompactView(0, 1, 2))
-                .addAction(resButtonPrev, "", piPrev)
-                .addAction(playOrPauseBtn, "", piPlayOrPause)
-                .addAction(resButtonNext, "", piNext)
-                .build();*/
-
-        startForeground(NOTIFICATION_ID, getNotifiaction());
+/*        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.notify(NOTIFICATION_ID, getNotification());*/
+        startForeground(NOTIFICATION_ID, getNotification());
     }
 
-    private void getBitmap() {
-        Picasso.with(this).load(customTrackList.get(position).getSmallImgUrl())
-                .resize((int) getResources().getDimension(R.dimen.notification_large_icon_width),
-                        (int) getResources().getDimension(R.dimen.notification_large_icon_height))
-                .into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        tempBitmap = bitmap;
-                    }
+    private Notification getNotification() {
+        RemoteViews remoteView = new RemoteViews(getPackageName(), R.layout.notif_control);
+        remoteView.setTextViewText(R.id.track_name, customTrackList.get(position).getTitle());
+        remoteView.setTextViewText(R.id.artist_name, artistName);
 
-                    @Override
-                    public void onBitmapFailed(Drawable errorDrawable) {
+        remoteView.setOnClickPendingIntent(R.id.play_previous, piPrev);
 
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                    }
-                });
-    }
-
-    private Notification getNotifiaction() {
-        String songName = customTrackList.get(position).getTitle();
-        String albumName = customTrackList.get(position).getAlbum();
-
-        NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(this);
-        notifBuilder.setSmallIcon(R.mipmap.ic_launcher);
-        notifBuilder.setContentTitle(artistName + " - " + albumName);
-        notifBuilder.setContentText(songName);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && showControlsAtLockScreen) {
-            notifBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
-        }
-
-        int playOrPauseBtn;
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-            playOrPauseBtn = android.R.drawable.ic_media_play;
+            remoteView.setViewVisibility(R.id.pause, View.GONE);
+            remoteView.setViewVisibility(R.id.resume, View.VISIBLE);
+            remoteView.setOnClickPendingIntent(R.id.resume, piPlayOrPause);
         } else {
-            playOrPauseBtn = android.R.drawable.ic_media_pause;
+            remoteView.setViewVisibility(R.id.resume, View.GONE);
+            remoteView.setViewVisibility(R.id.pause, View.VISIBLE);
+            remoteView.setOnClickPendingIntent(R.id.pause, piPlayOrPause);
         }
 
-        notifBuilder.addAction(android.R.drawable.ic_media_previous, "", piPrev);
-        notifBuilder.addAction(playOrPauseBtn, "", piPlayOrPause);
-        notifBuilder.addAction(android.R.drawable.ic_media_next, "", piNext);
+        remoteView.setOnClickPendingIntent(R.id.play_next, piNext);
 
-        notifBuilder.setContentIntent(getPendingIntentForPlayer());
+        NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setContent(remoteView)
+                .setContentIntent(getPendingIntentForPlayer());
 
 
+        MyLogger.log(TAG, "ShPref.isShowLockScreen: " + ShPref.isShowLockScreen(getApplicationContext()));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (ShPref.isShowLockScreen(getApplicationContext())) {
+                notifBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
+            } else {
+                notifBuilder.setVisibility(Notification.VISIBILITY_SECRET);
+            }
+        }
 
-        return notifBuilder.build();
+        Notification notification = notifBuilder.build();
+
+        String imgUrl = customTrackList.get(position).getSmallImgUrl();
+        if (imgUrl != null && imgUrl.length() > 1) {
+            Picasso.with(this).load(imgUrl).into(remoteView, R.id.album_img, NOTIFICATION_ID, notification);
+        }
+
+        return notification;
     }
+
 
     private PendingIntent getPendingIntent(String action) {
         Intent intent = new Intent(PlayerService.this, PlayerService.class);
@@ -248,6 +183,10 @@ public class PlayerService extends Service {
             case PlayerCtrlEvent.PREV:
                 prev();
                 break;
+            case PlayerCtrlEvent.KILL_SERVER:
+                stopForeground(true);
+                stopSelf();
+                break;
         }
     }
 
@@ -265,14 +204,18 @@ public class PlayerService extends Service {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
                     mMediaPlayer.start();
-                    EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
+                    if (MyApplication.isPlayerVisible) {
+                        EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
+                    }
                     new Thread(mUpdaterCounter).start();
                 }
             });
             mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
+                    if (MyApplication.isPlayerVisible) {
+                        EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
+                    }
                     startForeground();
                 }
             });
@@ -284,13 +227,15 @@ public class PlayerService extends Service {
     Runnable mUpdaterCounter = new Runnable() {
         @Override
         public void run() {
-            if (mMediaPlayer.isPlaying()) {
+            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                EventBus.getDefault().post(new UiUpdateEvent(mMediaPlayer.getCurrentPosition()));
+                if (MyApplication.isPlayerVisible) {
+                    EventBus.getDefault().post(new UiUpdateEvent(mMediaPlayer.getCurrentPosition()));
+                }
                 mUpdaterCounter.run();
             }
         }
@@ -301,7 +246,9 @@ public class PlayerService extends Service {
         if (mMediaPlayer != null) {
             MyLogger.log(TAG, "Play");
             mMediaPlayer.start();
-            EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
+            if (MyApplication.isPlayerVisible) {
+                EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
+            }
             new Thread(mUpdaterCounter).start();
         }
     }
@@ -310,7 +257,9 @@ public class PlayerService extends Service {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
             MyLogger.log(TAG, "Pause");
             mMediaPlayer.pause();
-            EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
+            if (MyApplication.isPlayerVisible) {
+                EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
+            }
         }
     }
 

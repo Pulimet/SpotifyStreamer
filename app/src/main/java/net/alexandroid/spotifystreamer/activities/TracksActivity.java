@@ -19,7 +19,7 @@ public class TracksActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_tracks, menu);
+        //getMenuInflater().inflate(R.menu.menu_tracks, menu);
         return true;
     }
 
@@ -27,8 +27,6 @@ public class TracksActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
-            case R.id.action_settings:
-                return true;
             case android.R.id.home:
                 super.onBackPressed();
                 return true;

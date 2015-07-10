@@ -9,6 +9,7 @@ public class PlayerCtrlEvent {
     public static final int NEXT = 2;
     public static final int PREV = 3;
     public static final int PLAY_OR_PAUSE = 4;
+    public static final int KILL_SERVER = 5;
     public final int action;
 
     public PlayerCtrlEvent(int action) {

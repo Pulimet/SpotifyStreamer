@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Spotify Streamer</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_change_country">Change country code</string>
+    <string name="action_lock_controls">Hide/Show lock screen controls</string>
 
     <string name="desc">desc</string>
     <string name="fake_artist">Coldplay</string>
@@ -14,6 +15,11 @@
     <string name="no_result_message">Tracks not found. :(</string>
     <string name="title_activity_player">Spotify Streamer</string>
     <string name="hello_world">Hello world!</string>
-
-
+    <string name="share">Share!</string>
+    <string name="country_code">Country code</string>
+    <string name="country_code_msg">Here you can manually set a country code:</string>
+    <string name="country_code_ok">OK</string>
+    <string name="country_code_cancel">Cancel</string>
+    <string name="lock_hidden">Lock screen controls are not visible now</string>
+    <string name="lock_visible">Lock screen controls are visible now</string>
 </resources>
