@@ -21,6 +21,7 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import net.alexandroid.spotifystreamer.R;
+import net.alexandroid.spotifystreamer.activities.MainActivity;
 import net.alexandroid.spotifystreamer.events.PlayerCtrlEvent;
 import net.alexandroid.spotifystreamer.events.UiUpdateEvent;
 import net.alexandroid.spotifystreamer.helpers.Helper;
@@ -212,8 +213,11 @@ public class PlayerFragment extends DialogFragment {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_tracks_f, menu);
         MenuItem item = menu.findItem(R.id.menu_item_share);
-        ShareActionProvider mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
-        mShareActionProvider.setShareIntent(createShareIntent());
+        if (!MainActivity.sWideScreen) {
+            item.setVisible(true);
+            ShareActionProvider mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
+            mShareActionProvider.setShareIntent(createShareIntent());
+        }
     }
 
     private Intent createShareIntent() {

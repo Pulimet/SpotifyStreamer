@@ -5,14 +5,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -43,13 +40,12 @@ public class PlayerService extends Service {
     public static final String CUSTOM_TRACK_LIST = "LIST";
     public static final String POSITION = "POSITION";
     public static final String ARTIST_NAME = "ARTIST_NAME";
+    public static String tempSharingData;
     private MediaPlayer mMediaPlayer;
     private ArrayList<CustomTrack> customTrackList;
     public static int position = -1;
     private String artistName;
-    private Bitmap tempBitmap;
     private PendingIntent piPlayOrPause, piNext, piPrev;
-    private MediaSessionCompat mMediaSession;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -74,7 +70,7 @@ public class PlayerService extends Service {
             position = intent.getIntExtra(POSITION, 0);
             artistName = intent.getStringExtra(ARTIST_NAME);
             loadAndPlay();
-            startForeground();
+            showNotification();
             MyLogger.log(TAG, "ACTION_PLAY");
         }
         if (intent.getAction().equals(ACTION_PLAY_OR_PAUSE)) {
@@ -92,10 +88,18 @@ public class PlayerService extends Service {
         return (START_NOT_STICKY);
     }
 
-    private void startForeground() {
-/*        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        notificationManager.notify(NOTIFICATION_ID, getNotification());*/
-        startForeground(NOTIFICATION_ID, getNotification());
+    private void showNotification() {
+        MyLogger.log(TAG, "ShPref.isShowLockScreen: " + ShPref.isShowLockScreen(getApplicationContext()));
+        if (ShPref.isShowLockScreen(getApplicationContext())) {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            notificationManager.notify(NOTIFICATION_ID, getNotification());
+        }
+        //startForeground(NOTIFICATION_ID, getNotification());
+    }
+
+    private void removeNotification() {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.cancel(NOTIFICATION_ID);
     }
 
     private Notification getNotification() {
@@ -121,16 +125,6 @@ public class PlayerService extends Service {
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setContent(remoteView)
                 .setContentIntent(getPendingIntentForPlayer());
-
-
-        MyLogger.log(TAG, "ShPref.isShowLockScreen: " + ShPref.isShowLockScreen(getApplicationContext()));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (ShPref.isShowLockScreen(getApplicationContext())) {
-                notifBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
-            } else {
-                notifBuilder.setVisibility(Notification.VISIBILITY_SECRET);
-            }
-        }
 
         Notification notification = notifBuilder.build();
 
@@ -184,15 +178,23 @@ public class PlayerService extends Service {
                 prev();
                 break;
             case PlayerCtrlEvent.KILL_SERVER:
-                stopForeground(true);
+                //stopForeground(true);
+                removeNotification();
                 stopSelf();
+                break;
+            case PlayerCtrlEvent.REMOVE_NOTIFICATION:
+                removeNotification();
+                break;
+            case PlayerCtrlEvent.SHOW_NOTIFICATION:
+                showNotification();
                 break;
         }
     }
 
     // Player control
     private void loadAndPlay() {
-        startForeground();
+        showNotification();
+        updateTempSharingData();
         String url = customTrackList.get(position).getPreviewUrl();
         try {
             mMediaPlayer.reset();
@@ -204,7 +206,7 @@ public class PlayerService extends Service {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
                     mMediaPlayer.start();
-                    if (MyApplication.isPlayerVisible) {
+                    if (MyApplication.isPlayerVisible || MyApplication.isMainActivityVisible) {
                         EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
                     }
                     new Thread(mUpdaterCounter).start();
@@ -213,10 +215,10 @@ public class PlayerService extends Service {
             mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    if (MyApplication.isPlayerVisible) {
+                    if (MyApplication.isPlayerVisible || MyApplication.isMainActivityVisible) {
                         EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
                     }
-                    startForeground();
+                    showNotification();
                 }
             });
         } catch (IOException e) {
@@ -246,8 +248,9 @@ public class PlayerService extends Service {
     private void play() {
         if (mMediaPlayer != null) {
             MyLogger.log(TAG, "Play");
+            updateTempSharingData();
             mMediaPlayer.start();
-            if (MyApplication.isPlayerVisible) {
+            if (MyApplication.isPlayerVisible || MyApplication.isMainActivityVisible) {
                 EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PLAY));
             }
             new Thread(mUpdaterCounter).start();
@@ -257,8 +260,9 @@ public class PlayerService extends Service {
     private void pause() {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
             MyLogger.log(TAG, "Pause");
+            updateTempSharingData();
             mMediaPlayer.pause();
-            if (MyApplication.isPlayerVisible) {
+            if (MyApplication.isPlayerVisible || MyApplication.isMainActivityVisible) {
                 EventBus.getDefault().post(new UiUpdateEvent(UiUpdateEvent.PAUSE));
             }
         }
@@ -267,10 +271,10 @@ public class PlayerService extends Service {
     private void playOrPause() {
         if (mMediaPlayer != null) {
             if (mMediaPlayer.isPlaying()) {
-                startForeground();
+                showNotification();
                 pause();
             } else {
-                startForeground();
+                showNotification();
                 play();
             }
         }
@@ -288,5 +292,12 @@ public class PlayerService extends Service {
             position--;
             loadAndPlay();
         }
+    }
+
+    private void updateTempSharingData() {
+        String title = customTrackList.get(position).getTitle();
+        String url = customTrackList.get(position).getPreviewUrl();
+        tempSharingData = artistName + " - " + title + ": " + url;
+        MyLogger.log(TAG, "Updated: " + tempSharingData);
     }
 }

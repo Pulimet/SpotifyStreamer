@@ -3,8 +3,10 @@ package net.alexandroid.spotifystreamer.activities;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,9 +16,13 @@ import android.widget.Toast;
 
 import net.alexandroid.spotifystreamer.R;
 import net.alexandroid.spotifystreamer.events.PlayerCtrlEvent;
+import net.alexandroid.spotifystreamer.events.UiUpdateEvent;
 import net.alexandroid.spotifystreamer.fragments.MainFragment;
 import net.alexandroid.spotifystreamer.fragments.TracksFragment;
+import net.alexandroid.spotifystreamer.helpers.MyApplication;
+import net.alexandroid.spotifystreamer.helpers.MyLogger;
 import net.alexandroid.spotifystreamer.helpers.ShPref;
+import net.alexandroid.spotifystreamer.services.PlayerService;
 
 import de.greenrobot.event.EventBus;
 
@@ -24,7 +30,9 @@ import de.greenrobot.event.EventBus;
 public class MainActivity extends AppCompatActivity implements MainFragment.FragmentCallback {
 
     public static final String TRACKS_FRAGMENT_TAG = "TRACKS_LIST";
-    public static boolean sWideScreen;
+    public static boolean sWideScreen, isShareShown;
+    private MenuItem mShareMenuItem;
+    private ShareActionProvider mShareActionProvider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +53,57 @@ public class MainActivity extends AppCompatActivity implements MainFragment.Frag
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+        MyLogger.log("ZAQ", "onCreateOptionsMenu");
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        if (sWideScreen) {
+            mShareMenuItem = menu.findItem(R.id.menu_item_share2);
+            mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(mShareMenuItem);
+            mShareActionProvider.setShareIntent(createShareIntent());
+            if (isShareShown) mShareMenuItem.setVisible(true);
+        }
         return true;
     }
+
+    private Intent createShareIntent() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, PlayerService.tempSharingData);
+        return shareIntent;
+    }
+
+    public void onEventMainThread(UiUpdateEvent event) {
+        if (sWideScreen) {
+            switch (event.duration) {
+                case UiUpdateEvent.PLAY:
+                    mShareMenuItem.setVisible(true);
+                    isShareShown = true;
+                    if (mShareActionProvider != null) {
+                        mShareActionProvider.setShareIntent(createShareIntent());
+                    }
+                    break;
+                case UiUpdateEvent.PAUSE:
+                    mShareMenuItem.setVisible(false);
+                    isShareShown = false;
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+        MyApplication.setMainActivityVisibility(true);
+    }
+
+    @Override
+    public void onStop() {
+        EventBus.getDefault().unregister(this);
+        MyApplication.setMainActivityVisibility(false);
+        super.onStop();
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -59,11 +115,15 @@ public class MainActivity extends AppCompatActivity implements MainFragment.Frag
                 if (ShPref.isShowLockScreen(getApplicationContext())) {
                     ShPref.setLockScreenShow(getApplicationContext(), false);
                     Toast.makeText(getApplicationContext(), getResources().getString(R.string.lock_hidden), Toast.LENGTH_SHORT).show();
+                    EventBus.getDefault().post(new PlayerCtrlEvent(PlayerCtrlEvent.REMOVE_NOTIFICATION));
                 } else {
                     ShPref.setLockScreenShow(getApplicationContext(), true);
                     Toast.makeText(getApplicationContext(), getResources().getString(R.string.lock_visible), Toast.LENGTH_SHORT).show();
+                    EventBus.getDefault().post(new PlayerCtrlEvent(PlayerCtrlEvent.SHOW_NOTIFICATION));
                 }
                 break;
+            case R.id.menu_item_share2:
+                return true;
         }
 
         return super.onOptionsItemSelected(item);

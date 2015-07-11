@@ -172,9 +172,9 @@ public class TracksFragment extends Fragment {
                                 track.preview_url, String.valueOf(track.duration_ms)));
                     }
                 } else {
-                    getActivity().runOnUiThread(showNoResultsMessage);
+                    if (getActivity() != null) getActivity().runOnUiThread(showNoResultsMessage);
                 }
-                getActivity().runOnUiThread(updateRecyclerView);
+                if (getActivity() != null) getActivity().runOnUiThread(updateRecyclerView);
             }
 
             @Override

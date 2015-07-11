@@ -13,4 +13,10 @@ public class MyApplication extends Application {
         MyApplication.isPlayerVisible = isPlayerVisible;
     }
 
+    public static boolean isMainActivityVisible;
+    public static void setMainActivityVisibility(boolean isPlayerVisible) {
+        MyApplication.isMainActivityVisible = isPlayerVisible;
+    }
+
+
 }
