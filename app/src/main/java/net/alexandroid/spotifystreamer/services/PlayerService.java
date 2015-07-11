@@ -227,17 +227,18 @@ public class PlayerService extends Service {
     Runnable mUpdaterCounter = new Runnable() {
         @Override
         public void run() {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 if (MyApplication.isPlayerVisible) {
                     EventBus.getDefault().post(new UiUpdateEvent(mMediaPlayer.getCurrentPosition()));
                 }
                 mUpdaterCounter.run();
             }
+
         }
     };
 
